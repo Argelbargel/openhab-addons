@@ -167,6 +167,7 @@ public class LightsAndGroupsTests {
 
     @Test
     public void updateSwitchable() {
+        commonSetup.enableHeuristics(false);
         SwitchItem item = new SwitchItem("switch1");
         item.setLabel("labelOld");
         item.addTag("Switchable");

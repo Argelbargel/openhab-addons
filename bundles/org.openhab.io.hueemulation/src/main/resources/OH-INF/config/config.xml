@@ -37,27 +37,36 @@
 		</parameter>
 		<parameter name="restrictToTagsSwitches" type="text" required="false">
 			<label>Switch Item Tags</label>
-			<description>The HUE emulation can either publish Switch items if this is set to an empty string or filter items by
-				tags. Use commas to separate multiple entries.</description>
+			<description>Items exposed as Switchable. Use commas to separate multiple entries.</description>
 			<default>Switchable</default>
 		</parameter>
 		<parameter name="restrictToTagsColorLights" type="text" required="false">
 			<label>Color Item Tags</label>
-			<description>The HUE emulation can either publish all Color items if this is set to an empty string or filter items
-				by tags. Use commas to separate multiple entries.</description>
+			<description>Items exposed as Color Lights. Use commas to separate multiple entries.</description>
 			<default>ColorLighting</default>
 		</parameter>
 		<parameter name="restrictToTagsWhiteLights" type="text" required="false">
 			<label>White Item Tags</label>
-			<description>The HUE emulation can either publish all Dimmer items if this is set to an empty string or filter items
-				by tags. Use commas to separate multiple entries.</description>
+			<description>Items exposed as Dimmers. Use commas to separate multiple entries.</description>
 			<default>Lighting</default>
+		</parameter>
+		<parameter name="determineItemsHeuristically" type="boolean">
+			<label>Determine Exposed Items Heuristically</label>
+			<description>When activated, the HUE emulation tries to heuristically determine which items to expose. It exposes all
+				items with
+				categories ColorLight or Light or with type Color, Dimmer, RollerShutter or Switch which do not have the
+				ignored tag set (see below).
+				If deactivated, only items with the tags above will be considered</description>
+			<default>false</default>
+			<advanced>true</advanced>
 		</parameter>
 		<parameter name="ignoreItemsWithTags" type="text" required="false">
 			<label>Ignore Items by Tag</label>
-			<description>All items that are tagged with the given tags are ignore by the Hue Emulation Service. Use commas to
-				separate multiple entries.</description>
+			<description>All items that are tagged with the given tags are ignored by the Hue Emulation. Use commas to
+				separate
+				multiple entries.</description>
 			<default>internal</default>
+			<advanced>true</advanced>
 		</parameter>
 		<parameter name="discoveryIp" type="text" required="false">
 			<label>Optional Discovery Address</label>

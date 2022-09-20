@@ -120,6 +120,8 @@ public class ConfigStore {
     public Set<String> whiteFilter = Collections.emptySet();
     public Set<String> ignoreItemsFilter = Collections.emptySet();
 
+    public boolean determineItemsHeuristically = true;
+
     private int highestAssignedHueID = 1;
 
     private String hueIDPrefix = "";
@@ -176,6 +178,8 @@ public class ConfigStore {
     @Modified
     public void modified(Map<String, Object> properties) {
         this.config = new Configuration(properties).as(HueEmulationConfig.class);
+
+        determineItemsHeuristically = config.determineItemsHeuristically;
 
         switchFilter = Collections.unmodifiableSet(
                 Stream.of(config.restrictToTagsSwitches.split(",")).map(String::trim).collect(Collectors.toSet()));

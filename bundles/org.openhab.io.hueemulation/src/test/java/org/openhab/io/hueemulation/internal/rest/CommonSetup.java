@@ -163,4 +163,8 @@ public class CommonSetup {
 
         mocksCloseable.close();
     }
+
+    public void enableHeuristics(boolean value) {
+        cs.determineItemsHeuristically = value;
+    }
 }

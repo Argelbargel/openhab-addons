@@ -354,30 +354,16 @@ public class StateUtils {
     }
 
     public static @Nullable DeviceType determineTargetType(ConfigStore cs, Item element) {
-        String category = element.getCategory();
-        String type = element.getType();
-        Set<String> tags = element.getTags();
-
-        // Determine type, heuristically
         DeviceType t = null;
+
+        Set<String> tags = element.getTags();
 
         // The user wants this item to be not exposed
         if (cs.ignoreItemsFilter.stream().anyMatch(tags::contains)) {
             return null;
         }
 
-        // First consider the category
-        if (category != null) {
-            switch (category) {
-                case "ColorLight":
-                    t = DeviceType.ColorType;
-                    break;
-                case "Light":
-                    t = DeviceType.SwitchType;
-            }
-        }
-
-        // Then the tags
+        // first consider the tags
         if (cs.switchFilter.stream().anyMatch(tags::contains)) {
             t = DeviceType.SwitchType;
         }
@@ -388,27 +374,45 @@ public class StateUtils {
             t = DeviceType.ColorType;
         }
 
+        // if no tags were configured or no items matched fallback to heuristics (if enabled)
+        if (t == null && cs.determineItemsHeuristically) {
+            t = determineTargetTypeHeuristically(element);
+        }
+
+        return t;
+    }
+
+    private static @Nullable DeviceType determineTargetTypeHeuristically(Item element) {
+        // Determine type, heuristically
+        DeviceType t = null;
+
+        // First consider the category
+        String category = element.getCategory();
+        if (category != null) {
+            switch (category) {
+                case "ColorLight":
+                    t = DeviceType.ColorType;
+                    break;
+                case "Light":
+                    t = DeviceType.SwitchType;
+            }
+        }
+
         // Last but not least, the item type
         if (t == null) {
-            switch (type) {
+            switch (element.getType()) {
                 case CoreItemFactory.COLOR:
-                    if (cs.colorFilter.isEmpty()) {
-                        t = DeviceType.ColorType;
-                    }
+                    t = DeviceType.ColorType;
                     break;
                 case CoreItemFactory.DIMMER:
                 case CoreItemFactory.ROLLERSHUTTER:
-                    if (cs.whiteFilter.isEmpty()) {
-                        t = DeviceType.WhiteTemperatureType;
-                    }
+                    t = DeviceType.WhiteTemperatureType;
                     break;
                 case CoreItemFactory.SWITCH:
-                    if (cs.switchFilter.isEmpty()) {
-                        t = DeviceType.SwitchType;
-                    }
-                    break;
+                    t = DeviceType.SwitchType;
             }
         }
+
         return t;
     }
 
