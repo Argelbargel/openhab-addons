@@ -35,37 +35,46 @@
 				want the old (round Hue bridge) to be emulated.</description>
 			<default>false</default>
 		</parameter>
+		<parameter name="ignoreItemsWithTags" type="text" required="false">
+			<label>Ignore Items by Tag</label>
+			<description>All groups and items that are tagged with the given tags are ignored by the Hue Emulation.
+				Use commas to
+				separate multiple entries.</description>
+			<default>Huemu_Ignored</default>
+			<advanced>true</advanced>
+		</parameter>
 		<parameter name="restrictToTagsSwitches" type="text" required="false">
 			<label>Switch Item Tags</label>
 			<description>Items exposed as Switchable. Use commas to separate multiple entries.</description>
-			<default>Switchable</default>
+			<default>Huemu_Switch</default>
 		</parameter>
 		<parameter name="restrictToTagsColorLights" type="text" required="false">
 			<label>Color Item Tags</label>
 			<description>Items exposed as Color Lights. Use commas to separate multiple entries.</description>
-			<default>ColorLighting</default>
+			<default>Huemu_ColorLight</default>
 		</parameter>
 		<parameter name="restrictToTagsWhiteLights" type="text" required="false">
 			<label>White Item Tags</label>
 			<description>Items exposed as Dimmers. Use commas to separate multiple entries.</description>
-			<default>Lighting</default>
+			<default>Huemu_Light</default>
+		</parameter>
+		<parameter name="restrictToTagsSensors" type="text" required="false">
+			<label>Sensor Item Tags</label>
+			<description>Items exposed as Sensors. Use commas to separate multiple entries.</description>
+			<default>Huemu_Sensor</default>
+		</parameter>
+		<parameter name="exposeGroupsAsDevices" type="boolean">
+			<label>Expose Groups as devices</label>
+			<description>When activated, groups with any of the device-tags above are exposed as devices</description>
+			<default>false</default>
+			<advanced>true</advanced>
 		</parameter>
 		<parameter name="determineItemsHeuristically" type="boolean">
 			<label>Determine Exposed Items Heuristically</label>
 			<description>When activated, the HUE emulation tries to heuristically determine which items to expose. It exposes all
-				items with
-				categories ColorLight or Light or with type Color, Dimmer, RollerShutter or Switch which do not have the
-				ignored tag set (see below).
-				If deactivated, only items with the tags above will be considered</description>
+				items with categories ColorLight or Light or with type Color, Dimmer, RollerShutter or Switch which do not have the
+				ignored tag set (see below). If deactivated, only items with the tags above will be considered</description>
 			<default>false</default>
-			<advanced>true</advanced>
-		</parameter>
-		<parameter name="ignoreItemsWithTags" type="text" required="false">
-			<label>Ignore Items by Tag</label>
-			<description>All items that are tagged with the given tags are ignored by the Hue Emulation. Use commas to
-				separate
-				multiple entries.</description>
-			<default>internal</default>
 			<advanced>true</advanced>
 		</parameter>
 		<parameter name="discoveryIp" type="text" required="false">

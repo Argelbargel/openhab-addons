@@ -43,6 +43,7 @@ import org.openhab.core.net.NetworkAddressService;
 import org.openhab.core.storage.Storage;
 import org.openhab.core.storage.StorageService;
 import org.openhab.io.hueemulation.internal.ConfigStore;
+import org.openhab.io.hueemulation.internal.HueEmulationConfig;
 import org.openhab.io.hueemulation.internal.rest.mocks.ConfigStoreWithoutMetadata;
 import org.openhab.io.hueemulation.internal.rest.mocks.DummyMetadataRegistry;
 import org.openhab.io.hueemulation.internal.rest.mocks.DummyUsersStorage;
@@ -123,9 +124,9 @@ public class CommonSetup {
             cs = new ConfigStoreWithoutMetadata(networkAddressService, configAdmin, scheduler);
         }
         cs.activate(Collections.singletonMap("uuid", "demouuid"));
-        cs.switchFilter = Collections.singleton("Switchable");
-        cs.whiteFilter = Collections.singleton("Switchable");
-        cs.colorFilter = Collections.singleton("ColorLighting");
+        cs.setSwitchTags(HueEmulationConfig.DEFAULT_SWITCHES_TAG);
+        cs.setWhiteLightTags(HueEmulationConfig.DEFAULT_SWITCHES_TAG);
+        cs.setColorLightTags(HueEmulationConfig.DEFAULT_COLOR_LIGHTS_TAG);
 
         userManagement = Mockito.spy(new UserManagement(storageService, cs));
 

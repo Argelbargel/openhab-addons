@@ -14,7 +14,6 @@ package org.openhab.io.hueemulation.internal.rest;
 
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -34,7 +33,6 @@ import org.openhab.core.common.registry.RegistryChangeListener;
 import org.openhab.core.items.GenericItem;
 import org.openhab.core.items.Item;
 import org.openhab.core.items.ItemRegistry;
-import org.openhab.core.library.CoreItemFactory;
 import org.openhab.io.hueemulation.internal.ConfigStore;
 import org.openhab.io.hueemulation.internal.HueEmulationService;
 import org.openhab.io.hueemulation.internal.NetworkUtils;
@@ -71,9 +69,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 @Consumes(MediaType.APPLICATION_JSON)
 public class Sensors implements RegistryChangeListener<Item> {
     private final Logger logger = LoggerFactory.getLogger(Sensors.class);
-    private static final Set<String> ALLOWED_ITEM_TYPES = Stream.of(CoreItemFactory.COLOR, CoreItemFactory.DIMMER,
-            CoreItemFactory.ROLLERSHUTTER, CoreItemFactory.SWITCH, CoreItemFactory.CONTACT, CoreItemFactory.NUMBER)
-            .collect(Collectors.toSet());
 
     @Reference
     protected @NonNullByDefault({}) ConfigStore cs;
@@ -112,19 +107,11 @@ public class Sensors implements RegistryChangeListener<Item> {
 
     @Override
     public synchronized void added(Item newElement) {
-        if (!(newElement instanceof GenericItem)) {
-            return;
+        if (cs.isSensor(newElement)) {
+            String hueID = cs.mapItemUIDtoHueID(newElement);
+            HueSensorEntry sensor = new HueSensorEntry((GenericItem) newElement);
+            cs.ds.sensors.put(hueID, sensor);
         }
-        GenericItem element = (GenericItem) newElement;
-
-        if (!ALLOWED_ITEM_TYPES.contains(element.getType())) {
-            return;
-        }
-
-        String hueID = cs.mapItemUIDtoHueID(element);
-
-        HueSensorEntry sensor = new HueSensorEntry(element);
-        cs.ds.sensors.put(hueID, sensor);
     }
 
     @Override
@@ -136,15 +123,13 @@ public class Sensors implements RegistryChangeListener<Item> {
 
     @Override
     public synchronized void updated(Item oldElement, Item newElement) {
-        if (!(newElement instanceof GenericItem)) {
-            return;
+        String hueID = cs.mapItemUIDtoHueID(newElement);
+        if (cs.isSensor(newElement)) {
+            HueSensorEntry sensor = new HueSensorEntry((GenericItem) newElement);
+            cs.ds.sensors.put(hueID, sensor);
+        } else {
+            cs.ds.sensors.remove(hueID);
         }
-        GenericItem element = (GenericItem) newElement;
-
-        String hueID = cs.mapItemUIDtoHueID(element);
-
-        HueSensorEntry sensor = new HueSensorEntry(element);
-        cs.ds.sensors.put(hueID, sensor);
     }
 
     @GET

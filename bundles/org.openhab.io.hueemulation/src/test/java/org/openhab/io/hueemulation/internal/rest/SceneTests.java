@@ -46,6 +46,7 @@ import org.openhab.core.library.types.PercentType;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.State;
 import org.openhab.io.hueemulation.internal.ConfigStore;
+import org.openhab.io.hueemulation.internal.HueEmulationConfig;
 import org.openhab.io.hueemulation.internal.dto.HueSceneEntry;
 import org.openhab.io.hueemulation.internal.rest.mocks.DummyItemRegistry;
 import org.openhab.io.hueemulation.internal.rest.mocks.DummyRuleRegistry;
@@ -88,12 +89,13 @@ public class SceneTests {
         subject.activate();
 
         // Add simulated lights
-        addItemToReg(new SwitchItem("switch1"), OnOffType.ON, "Switchable");
-        addItemToReg(new ColorItem("color1"), HSBType.BLUE, "ColorLighting");
-        addItemToReg(new DimmerItem("white1"), new PercentType(12), "Lighting");
-        addItemToReg(new RollershutterItem("roller1"), new PercentType(12), "Lighting");
-        addItemToReg(new DimmerItem("white1"), new PercentType(12), "Lighting");
-        addItemToReg(new GroupItem("group1"), OnOffType.ON, "Switchable");
+        addItemToReg(new SwitchItem("switch1"), OnOffType.ON, HueEmulationConfig.DEFAULT_SWITCHES_TAG);
+        addItemToReg(new ColorItem("color1"), HSBType.BLUE, HueEmulationConfig.DEFAULT_COLOR_LIGHTS_TAG);
+        addItemToReg(new DimmerItem("white1"), new PercentType(12), HueEmulationConfig.DEFAULT_WHITE_LIGHTS_TAG);
+        addItemToReg(new RollershutterItem("roller1"), new PercentType(12),
+                HueEmulationConfig.DEFAULT_WHITE_LIGHTS_TAG);
+        addItemToReg(new DimmerItem("white1"), new PercentType(12), HueEmulationConfig.DEFAULT_WHITE_LIGHTS_TAG);
+        addItemToReg(new GroupItem("group1"), OnOffType.ON, HueEmulationConfig.DEFAULT_SWITCHES_TAG);
 
         commonSetup.start(new ResourceConfig().registerInstances(subject));
     }

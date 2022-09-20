@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -39,7 +38,6 @@ import org.openhab.core.items.GroupItem;
 import org.openhab.core.items.Item;
 import org.openhab.core.items.ItemRegistry;
 import org.openhab.core.items.events.ItemEventFactory;
-import org.openhab.core.library.CoreItemFactory;
 import org.openhab.core.types.Command;
 import org.openhab.io.hueemulation.internal.ConfigStore;
 import org.openhab.io.hueemulation.internal.DeviceType;
@@ -103,11 +101,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 @Path("")
 @Produces(MediaType.APPLICATION_JSON)
 public class LightsAndGroups implements RegistryChangeListener<Item> {
-    public static final String EXPOSE_AS_DEVICE_TAG = "huelight";
+    private static final String GROUP_ROOM_PREFIX = "Huemu_Room_";
+    private static final String GROUP_TYPE_PREFIX = "Huemu_Type_";
+
     private final Logger logger = LoggerFactory.getLogger(LightsAndGroups.class);
-    private static final String ITEM_TYPE_GROUP = "Group";
-    private static final Set<String> ALLOWED_ITEM_TYPES = Stream.of(CoreItemFactory.COLOR, CoreItemFactory.DIMMER,
-            CoreItemFactory.ROLLERSHUTTER, CoreItemFactory.SWITCH, ITEM_TYPE_GROUP).collect(Collectors.toSet());
 
     @Reference
     protected @NonNullByDefault({}) ConfigStore cs;
@@ -143,32 +140,23 @@ public class LightsAndGroups implements RegistryChangeListener<Item> {
 
     @Override
     public synchronized void added(Item newElement) {
-        if (!(newElement instanceof GenericItem)) {
-            return;
-        }
-        GenericItem element = (GenericItem) newElement;
-
-        if (!(element instanceof GroupItem) && !ALLOWED_ITEM_TYPES.contains(element.getType())) {
-            return;
-        }
-
-        DeviceType deviceType = StateUtils.determineTargetType(cs, element);
+        DeviceType deviceType = StateUtils.determineTargetType(cs, newElement);
         if (deviceType == null) {
             return;
         }
 
-        String hueID = cs.mapItemUIDtoHueID(element);
+        String hueID = cs.mapItemUIDtoHueID(newElement);
 
-        if (element instanceof GroupItem && !element.hasTag(EXPOSE_AS_DEVICE_TAG)) {
-            GroupItem g = (GroupItem) element;
+        if (cs.isGroup(newElement)) {
+            GroupItem g = (GroupItem) newElement;
             HueGroupEntry group = new HueGroupEntry(g.getName(), g, deviceType);
 
             // Restore group type and room class from tags
             for (String tag : g.getTags()) {
-                if (tag.startsWith("huetype_")) {
-                    group.type = tag.split("huetype_")[1];
-                } else if (tag.startsWith("hueroom_")) {
-                    group.roomclass = tag.split("hueroom_")[1];
+                if (tag.startsWith(GROUP_TYPE_PREFIX)) {
+                    group.type = tag.split(GROUP_TYPE_PREFIX)[1];
+                } else if (tag.startsWith(GROUP_ROOM_PREFIX)) {
+                    group.roomclass = tag.split(GROUP_ROOM_PREFIX)[1];
                 }
             }
 
@@ -179,7 +167,8 @@ public class LightsAndGroups implements RegistryChangeListener<Item> {
             }
 
             cs.ds.groups.put(hueID, group);
-        } else {
+        } else if (cs.isLight(newElement)) {
+            GenericItem element = (GenericItem) newElement;
             HueLightEntry device = new HueLightEntry(element, cs.getHueUniqueId(hueID), deviceType);
             device.item = element;
             cs.ds.lights.put(hueID, device);
@@ -210,18 +199,13 @@ public class LightsAndGroups implements RegistryChangeListener<Item> {
     @SuppressWarnings({ "null", "unused" })
     @Override
     public synchronized void updated(Item oldElement, Item newElement) {
-        if (!(newElement instanceof GenericItem)) {
-            return;
-        }
-        GenericItem element = (GenericItem) newElement;
-
-        String hueID = cs.mapItemUIDtoHueID(element);
+        DeviceType deviceType = StateUtils.determineTargetType(cs, newElement);
+        String hueID = cs.mapItemUIDtoHueID(newElement);
 
         HueGroupEntry hueGroup = cs.ds.groups.get(hueID);
         if (hueGroup != null) {
-            DeviceType t = StateUtils.determineTargetType(cs, element);
-            if (t != null && element instanceof GroupItem) {
-                hueGroup.updateItem((GroupItem) element);
+            if (deviceType != null && newElement instanceof GroupItem) {
+                hueGroup.updateItem((GroupItem) newElement);
             } else {
                 cs.ds.groups.remove(hueID);
             }
@@ -230,18 +214,16 @@ public class LightsAndGroups implements RegistryChangeListener<Item> {
         HueLightEntry hueDevice = cs.ds.lights.get(hueID);
         if (hueDevice == null) {
             // If the correct tags got added -> use the logic within added()
-            added(element);
+            added(newElement);
             return;
         }
 
         // Check if type can still be determined (tags and category is still sufficient)
-        DeviceType t = StateUtils.determineTargetType(cs, element);
-        if (t == null) {
-            removed(element);
-            return;
+        if (deviceType != null) {
+            hueDevice.updateItem((GenericItem) newElement);
+        } else {
+            removed(newElement);
         }
-
-        hueDevice.updateItem(element);
     }
 
     @GET
@@ -478,11 +460,11 @@ public class LightsAndGroups implements RegistryChangeListener<Item> {
         GroupItem groupItem = new GroupItem(groupid);
 
         if (!HueGroupEntry.TypeEnum.LightGroup.name().equals(state.type)) {
-            groupItem.addTag("huetype_" + state.type);
+            groupItem.addTag(GROUP_TYPE_PREFIX + state.type);
         }
 
         if (HueGroupEntry.TypeEnum.Room.name().equals(state.type) && !state.roomclass.isEmpty()) {
-            groupItem.addTag("hueroom_" + state.roomclass);
+            groupItem.addTag(GROUP_ROOM_PREFIX + state.roomclass);
         }
 
         List<Item> groupItems = new ArrayList<>();

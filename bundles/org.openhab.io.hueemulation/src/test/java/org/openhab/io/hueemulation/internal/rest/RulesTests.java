@@ -43,6 +43,7 @@ import org.openhab.core.library.types.HSBType;
 import org.openhab.core.library.types.OnOffType;
 import org.openhab.core.types.State;
 import org.openhab.io.hueemulation.internal.ConfigStore;
+import org.openhab.io.hueemulation.internal.HueEmulationConfig;
 import org.openhab.io.hueemulation.internal.RuleUtils;
 import org.openhab.io.hueemulation.internal.dto.HueRuleEntry;
 import org.openhab.io.hueemulation.internal.dto.HueRuleEntry.Operator;
@@ -99,9 +100,9 @@ public class RulesTests {
         lightsAndGroups.itemRegistry = itemRegistry;
         lightsAndGroups.activate();
 
-        addItemToReg(new SwitchItem("switch1"), OnOffType.ON, "Switchable", "name1");
-        addItemToReg(new SwitchItem("switch2"), OnOffType.ON, "Switchable", "name2");
-        addItemToReg(new ColorItem("color1"), HSBType.BLUE, "ColorLighting", "");
+        addItemToReg(new SwitchItem("switch1"), OnOffType.ON, HueEmulationConfig.DEFAULT_SWITCHES_TAG, "name1");
+        addItemToReg(new SwitchItem("switch2"), OnOffType.ON, HueEmulationConfig.DEFAULT_SWITCHES_TAG, "name2");
+        addItemToReg(new ColorItem("color1"), HSBType.BLUE, HueEmulationConfig.DEFAULT_COLOR_LIGHTS_TAG, "");
 
         commonSetup.start(new ResourceConfig().registerInstances(subject));
     }

@@ -31,10 +31,13 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.core.common.ThreadPoolManager;
 import org.openhab.core.config.core.ConfigurableService;
 import org.openhab.core.config.core.Configuration;
+import org.openhab.core.items.GenericItem;
+import org.openhab.core.items.GroupItem;
 import org.openhab.core.items.Item;
 import org.openhab.core.items.Metadata;
 import org.openhab.core.items.MetadataKey;
 import org.openhab.core.items.MetadataRegistry;
+import org.openhab.core.library.CoreItemFactory;
 import org.openhab.core.net.CidrAddress;
 import org.openhab.core.net.NetUtil;
 import org.openhab.core.net.NetworkAddressService;
@@ -80,6 +83,12 @@ public class ConfigStore {
     public static final String METAKEY = "HUEEMU";
     public static final String EVENT_ADDRESS_CHANGED = "HUE_EMU_CONFIG_ADDR_CHANGED";
 
+    private static final String ITEM_TYPE_GROUP = "Group";
+    private static final Set<String> ALLOWED_SENSOR_ITEM_TYPES = Set.of(CoreItemFactory.COLOR, CoreItemFactory.DIMMER,
+            CoreItemFactory.ROLLERSHUTTER, CoreItemFactory.SWITCH, CoreItemFactory.CONTACT, CoreItemFactory.NUMBER);
+    private static final Set<String> ALLOWED_LIGHT_ITEM_TYPES = Set.of(CoreItemFactory.COLOR, CoreItemFactory.DIMMER,
+            CoreItemFactory.ROLLERSHUTTER, CoreItemFactory.SWITCH, ITEM_TYPE_GROUP);
+
     private final Logger logger = LoggerFactory.getLogger(ConfigStore.class);
 
     public HueDataStore ds = new HueDataStore();
@@ -115,12 +124,14 @@ public class ConfigStore {
     private Set<InetAddress> discoveryIps = Collections.emptySet();
     protected volatile @NonNullByDefault({}) HueEmulationConfig config;
 
-    public Set<String> switchFilter = Collections.emptySet();
-    public Set<String> colorFilter = Collections.emptySet();
-    public Set<String> whiteFilter = Collections.emptySet();
-    public Set<String> ignoreItemsFilter = Collections.emptySet();
+    private Set<String> switchTags = Collections.emptySet();
+    private Set<String> colorLightTags = Collections.emptySet();
+    private Set<String> whiteLightTags = Collections.emptySet();
+    private Set<String> sensorTags = Collections.emptySet();
+    private Set<String> ignoredTags = Collections.emptySet();
 
     public boolean determineItemsHeuristically = true;
+    public boolean exposeGroupsAsDevices = true;
 
     private int highestAssignedHueID = 1;
 
@@ -179,19 +190,13 @@ public class ConfigStore {
     public void modified(Map<String, Object> properties) {
         this.config = new Configuration(properties).as(HueEmulationConfig.class);
 
+        setIgnoredTags(config.ignoreItemsWithTags);
+        setSwitchTags(config.restrictToTagsSwitches);
+        setColorLightTags(config.restrictToTagsColorLights);
+        setWhiteLightTags(config.restrictToTagsWhiteLights);
+        setSensorTags(config.restrictToTagsSensors);
+        exposeGroupsAsDevices = config.exposeGroupsAsDevices;
         determineItemsHeuristically = config.determineItemsHeuristically;
-
-        switchFilter = Collections.unmodifiableSet(
-                Stream.of(config.restrictToTagsSwitches.split(",")).map(String::trim).collect(Collectors.toSet()));
-
-        colorFilter = Collections.unmodifiableSet(
-                Stream.of(config.restrictToTagsColorLights.split(",")).map(String::trim).collect(Collectors.toSet()));
-
-        whiteFilter = Collections.unmodifiableSet(
-                Stream.of(config.restrictToTagsWhiteLights.split(",")).map(String::trim).collect(Collectors.toSet()));
-
-        ignoreItemsFilter = Collections.unmodifiableSet(
-                Stream.of(config.ignoreItemsWithTags.split(",")).map(String::trim).collect(Collectors.toSet()));
 
         // Use either the user configured
         InetAddress configuredAddress = null;
@@ -257,6 +262,31 @@ public class ConfigStore {
         }
     }
 
+    public void setIgnoredTags(String... tags) {
+        ignoredTags = parseTagSet(tags);
+    }
+
+    public void setSwitchTags(String... tags) {
+        switchTags = parseTagSet(tags);
+    }
+
+    public void setWhiteLightTags(String... tags) {
+        whiteLightTags = parseTagSet(tags);
+    }
+
+    public void setColorLightTags(String... tags) {
+        colorLightTags = parseTagSet(tags);
+    }
+
+    public void setSensorTags(String... tags) {
+        sensorTags = parseTagSet(tags);
+    }
+
+    private Set<String> parseTagSet(String... values) {
+        return Stream.of(values).flatMap(v -> Stream.of(v.split(",")).map(String::trim).map(String::toLowerCase))
+                .collect(Collectors.toSet());
+    }
+
     private String getConfiguredHostAddress(InetAddress configuredAddress) {
         String hostAddress = configuredAddress.getHostAddress();
         int percentIndex = hostAddress.indexOf("%");
@@ -319,6 +349,66 @@ public class ConfigStore {
                 logger.warn("A non numeric hue ID '{}' was assigned. Ignoring!", metadata.getValue());
             }
         }
+    }
+
+    public boolean containsSwitchTag(Set<String> tags) {
+        return containsTag(switchTags, tags);
+    }
+
+    public boolean containsWhiteLightTag(Set<String> tags) {
+        return containsTag(whiteLightTags, tags);
+    }
+
+    public boolean containsColorLightTag(Set<String> tags) {
+        return containsTag(colorLightTags, tags);
+    }
+
+    private boolean containsSensorTag(Set<String> tags) {
+        return containsTag(sensorTags, tags);
+    }
+
+    private boolean containsIgnoredTag(Set<String> tags) {
+        return containsTag(ignoredTags, tags);
+    }
+
+    public boolean isSensor(Item item) {
+        if (!isGenericItemOfType(item, ALLOWED_SENSOR_ITEM_TYPES)) {
+            return false;
+        }
+
+        Set<String> tags = item.getTags();
+        if (containsIgnoredTag(tags)) {
+            return false;
+        }
+
+        return containsSensorTag(tags) || determineItemsHeuristically;
+    }
+
+    public boolean isGroup(Item item) {
+        Set<String> tags = item.getTags();
+
+        if (!(item instanceof GroupItem) || containsIgnoredTag(tags)) {
+            return false;
+        }
+
+        if (!exposeGroupsAsDevices) {
+            return true;
+        }
+
+        return !(containsSwitchTag(tags) || containsWhiteLightTag(tags) || containsColorLightTag(tags)
+                || containsSensorTag(tags));
+    }
+
+    public boolean isLight(Item item) {
+        return isGenericItemOfType(item, ALLOWED_LIGHT_ITEM_TYPES) && !containsIgnoredTag(item.getTags());
+    }
+
+    private boolean isGenericItemOfType(Item item, Set<String> types) {
+        return item instanceof GenericItem && types.contains(item.getType());
+    }
+
+    private boolean containsTag(Set<String> filter, Set<String> tags) {
+        return tags.stream().map(String::toLowerCase).anyMatch(filter::contains);
     }
 
     /**

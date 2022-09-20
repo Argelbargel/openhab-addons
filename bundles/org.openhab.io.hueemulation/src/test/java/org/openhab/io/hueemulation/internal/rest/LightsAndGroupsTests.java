@@ -38,6 +38,7 @@ import org.openhab.core.library.types.HSBType;
 import org.openhab.core.library.types.OnOffType;
 import org.openhab.io.hueemulation.internal.ConfigStore;
 import org.openhab.io.hueemulation.internal.DeviceType;
+import org.openhab.io.hueemulation.internal.HueEmulationConfig;
 import org.openhab.io.hueemulation.internal.dto.HueGroupEntry;
 import org.openhab.io.hueemulation.internal.dto.HueLightEntry;
 import org.openhab.io.hueemulation.internal.dto.HueStateColorBulb;
@@ -100,7 +101,7 @@ public class LightsAndGroupsTests {
     @Test
     public void addSwitchableByTag() {
         SwitchItem item = new SwitchItem("switch1");
-        item.addTag("Switchable");
+        item.addTag(HueEmulationConfig.DEFAULT_SWITCHES_TAG);
         itemRegistry.add(item);
         HueLightEntry device = cs.ds.lights.get(cs.mapItemUIDtoHueID(item));
         assertThat(device.item, is(item));
@@ -110,7 +111,8 @@ public class LightsAndGroupsTests {
     @Test
     public void ignoreByTag() {
         SwitchItem item = new SwitchItem("switch1");
-        item.addTags("Switchable", "internal"); // The ignore tag will win
+        item.addTags(HueEmulationConfig.DEFAULT_SWITCHES_TAG, HueEmulationConfig.DEFAULT_IGNORED_TAG); // The ignore tag
+                                                                                                       // will win
         itemRegistry.add(item);
         HueLightEntry device = cs.ds.lights.get(cs.mapItemUIDtoHueID(item));
         assertThat(device, is(nullValue()));
@@ -118,8 +120,9 @@ public class LightsAndGroupsTests {
 
     @Test
     public void addGroupSwitchableByTag() {
+        cs.exposeGroupsAsDevices = false;
         GroupItem item = new GroupItem("group1", new SwitchItem("switch1"));
-        item.addTag("Switchable");
+        item.addTag(HueEmulationConfig.DEFAULT_SWITCHES_TAG);
         itemRegistry.add(item);
         HueGroupEntry device = cs.ds.groups.get(cs.mapItemUIDtoHueID(item));
         assertThat(device.groupItem, is(item));
@@ -128,9 +131,9 @@ public class LightsAndGroupsTests {
 
     @Test
     public void addDeviceAsGroupSwitchableByTag() {
+        cs.exposeGroupsAsDevices = true;
         GroupItem item = new GroupItem("group1", new SwitchItem("switch1"));
-        item.addTag("Switchable");
-        item.addTag("Huelight");
+        item.addTag(HueEmulationConfig.DEFAULT_SWITCHES_TAG);
         itemRegistry.add(item);
         HueLightEntry device = cs.ds.lights.get(cs.mapItemUIDtoHueID(item));
         assertThat(device.item, is(item));
@@ -139,8 +142,9 @@ public class LightsAndGroupsTests {
 
     @Test
     public void addGroupWithoutTypeByTag() {
+        cs.exposeGroupsAsDevices = false;
         GroupItem item = new GroupItem("group1", null);
-        item.addTag("Switchable");
+        item.addTag(HueEmulationConfig.DEFAULT_SWITCHES_TAG);
 
         itemRegistry.add(item);
 
@@ -152,9 +156,11 @@ public class LightsAndGroupsTests {
 
     @Test
     public void removeGroupWithoutTypeAndTag() {
+        cs.exposeGroupsAsDevices = false;
+
         String groupName = "group1";
         GroupItem item = new GroupItem(groupName, null);
-        item.addTag("Switchable");
+        item.addTag(HueEmulationConfig.DEFAULT_SWITCHES_TAG);
         itemRegistry.add(item);
 
         String hueID = cs.mapItemUIDtoHueID(item);
@@ -170,7 +176,7 @@ public class LightsAndGroupsTests {
         commonSetup.enableHeuristics(false);
         SwitchItem item = new SwitchItem("switch1");
         item.setLabel("labelOld");
-        item.addTag("Switchable");
+        item.addTag(HueEmulationConfig.DEFAULT_SWITCHES_TAG);
         itemRegistry.add(item);
         String hueID = cs.mapItemUIDtoHueID(item);
         HueLightEntry device = cs.ds.lights.get(hueID);
@@ -180,7 +186,7 @@ public class LightsAndGroupsTests {
 
         SwitchItem newitem = new SwitchItem("switch1");
         newitem.setLabel("labelNew");
-        newitem.addTag("Switchable");
+        newitem.addTag(HueEmulationConfig.DEFAULT_SWITCHES_TAG);
         subject.updated(item, newitem);
         device = cs.ds.lights.get(hueID);
         assertThat(device.item, is(newitem));

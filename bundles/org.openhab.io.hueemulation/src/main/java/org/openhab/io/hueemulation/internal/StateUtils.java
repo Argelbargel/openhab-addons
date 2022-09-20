@@ -357,24 +357,18 @@ public class StateUtils {
         DeviceType t = null;
 
         Set<String> tags = element.getTags();
-
-        // The user wants this item to be not exposed
-        if (cs.ignoreItemsFilter.stream().anyMatch(tags::contains)) {
-            return null;
-        }
-
         // first consider the tags
-        if (cs.switchFilter.stream().anyMatch(tags::contains)) {
+        if (cs.containsSwitchTag(tags)) {
             t = DeviceType.SwitchType;
         }
-        if (cs.whiteFilter.stream().anyMatch(tags::contains)) {
+        if (cs.containsWhiteLightTag(tags)) {
             t = DeviceType.WhiteTemperatureType;
         }
-        if (cs.colorFilter.stream().anyMatch(tags::contains)) {
+        if (cs.containsColorLightTag(tags)) {
             t = DeviceType.ColorType;
         }
 
-        // if no tags were configured or no items matched fallback to heuristics (if enabled)
+        // if no tags were configured or none matched fallback to heuristics (if enabled)
         if (t == null && cs.determineItemsHeuristically) {
             t = determineTargetTypeHeuristically(element);
         }

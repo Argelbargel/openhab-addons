@@ -45,15 +45,24 @@ public class HueEmulationConfig {
     public @Nullable String discoveryIp;
     public int discoveryHttpPort = 0;
     public boolean determineItemsHeuristically = true;
+    public boolean exposeGroupsAsDevices = true;
+
+    public static final String DEFAULT_SWITCHES_TAG = "Huemu_Switch";
+    public static final String DEFAULT_COLOR_LIGHTS_TAG = "Huemu_ColorLight";
+    public static final String DEFAULT_WHITE_LIGHTS_TAG = "Huemu_Light";
+    public static final String DEFAULT_SENSORS_TAG = "Huemu_Sensor";
+    public static final String DEFAULT_IGNORED_TAG = "Huemu_Ignored";
 
     /** Comma separated list of tags */
-    public String restrictToTagsSwitches = "Switchable";
+    public String restrictToTagsSwitches = DEFAULT_SWITCHES_TAG;
     /** Comma separated list of tags */
-    public String restrictToTagsColorLights = "ColorLighting";
+    public String restrictToTagsColorLights = DEFAULT_COLOR_LIGHTS_TAG;
     /** Comma separated list of tags */
-    public String restrictToTagsWhiteLights = "Lighting";
+    public String restrictToTagsWhiteLights = DEFAULT_WHITE_LIGHTS_TAG;
     /** Comma separated list of tags */
-    public String ignoreItemsWithTags = "internal";
+    public String restrictToTagsSensors = DEFAULT_SENSORS_TAG;
+    /** Comma separated list of tags */
+    public String ignoreItemsWithTags = DEFAULT_IGNORED_TAG;
 
     public static final String CONFIG_UUID = "uuid";
     public String uuid = "";
